@@ -66,7 +66,7 @@ namespace byteo::unix {
             if (sock.fd == -1) {
                 socket_table.erase(id);
 
-                throw std::runtime_error("socket(stream|unix): Unable to open socket");
+                throw std::runtime_error("socket(datagram|unix): Unable to open socket");
             }
             
             return {id, fingerprint};
