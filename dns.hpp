@@ -17,7 +17,7 @@
 
 namespace byteo {
     namespace ipv4::dns {
-        address_list resolve(const std::string& host, int16_t port) {
+        address_list resolve(const std::string& host, uint16_t port) {
             address_list al;
 
             addrinfo hints {};
@@ -43,7 +43,7 @@ namespace byteo {
     }
 
     namespace ipv6::dns {
-        address_list resolve(const std::string& host, int16_t port) {
+        address_list resolve(const std::string& host, uint16_t port) {
             address_list al;
 
             addrinfo hints {};
