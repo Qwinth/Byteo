@@ -50,6 +50,12 @@ namespace byteo {
             if (index >= 0) fds.erase(fds.begin() + index);
         }
 
+        void removeAll() {
+            std::unique_lock lock(poll_mtx);
+
+            fds.clear();
+        }
+
         std::vector<event> poll(int32_t timeout = -1) {
             std::unique_lock lock(poll_mtx);
 
