@@ -31,9 +31,9 @@ namespace byteo {
         bool descriptor_ok(descriptor desc) {
             auto it = socket_table.find(desc.id);
 
-            if (it != socket_table.end()) return desc.fingerprint == it->second.fingerprint;
+            if (it == socket_table.end()) return false;
 
-            return false;
+            return desc.fingerprint == it->second.fingerprint;
         }
 
         fd_t realfd(descriptor desc) {
