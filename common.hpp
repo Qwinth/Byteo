@@ -182,6 +182,15 @@ namespace byteo {
         return buffer;
     }
 
+    template<typename blob_type>
+    blob_type readblob(descriptor desc, int32_t flags = 0) {
+        blob_type blob;
+
+        if (read(desc, &blob, sizeof(blob_type), flags) < sizeof(blob_type)) throw std::runtime_error("readblob(): corrupted blob");
+
+        return blob;
+    }
+
     std::string readstring(descriptor desc, int64_t size, int32_t flags = 0) {
         std::string buffer(size, 0);
         buffer.resize(read(desc, buffer.data(), size, flags));
@@ -206,6 +215,11 @@ namespace byteo {
 
     int64_t write(descriptor desc, const std::vector<std::byte>& buffer, int32_t flags = 0) {
         return write(desc, buffer.data(), buffer.size(), flags);
+    }
+
+    template<typename blob_type>
+    int64_t writeblob(descriptor desc, const blob_type& blob, int32_t flags = 0) {
+        return write(desc, &blob, sizeof(blob_type), flags);
     }
 
     int64_t writestring(descriptor desc, const std::string& string, int32_t flags = 0) {
