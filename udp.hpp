@@ -21,7 +21,7 @@ namespace byteo {
     namespace ipv4::udp {
         descriptor socket() {
 #ifdef _WIN32
-            libsocket::utils::wsainit();
+            byteo::utils::wsainit();
 #endif
 
             int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
@@ -54,7 +54,7 @@ namespace byteo {
     namespace ipv6::udp {
         descriptor socket() {
 #ifdef _WIN32
-            libsocket::utils::wsainit();
+            byteo::utils::wsainit();
 #endif
 
             int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);

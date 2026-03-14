@@ -70,7 +70,7 @@ namespace byteo {
 
             byteo::utils::socket& sock = socket_table.at(desc.id);
 
-            if (::setsockopt(sock.fd, level, optname, &optval, sizeof(T)) == -1) throw std::runtime_error("setsockopt(): Unable to set socket option: " + std::string(strerror(errno)));
+            if (::setsockopt(sock.fd, level, optname, reinterpret_cast<char*>(&optval), sizeof(T)) == -1) throw std::runtime_error("setsockopt(): Unable to set socket option: " + std::string(strerror(errno)));
         }
 
         template<>
@@ -83,7 +83,7 @@ namespace byteo {
 
             int32_t int_optval = optval;
 
-            if (::setsockopt(sock.fd, level, optname, &int_optval, sizeof(int32_t)) == -1) throw std::runtime_error("setsockopt(): Unable to set socket option: " + std::string(strerror(errno)));
+            if (::setsockopt(sock.fd, level, optname, reinterpret_cast<char*>(&int_optval), sizeof(int32_t)) == -1) throw std::runtime_error("setsockopt(): Unable to set socket option: " + std::string(strerror(errno)));
         }
 
         template<typename T>
@@ -138,7 +138,7 @@ namespace byteo {
 
             uint32_t bytes_available;
 #ifdef _WIN32
-            ioctlsocket(sock.fd, FIONREAD, reinterpret_cast<uint64_t*>(&bytes_available));
+            ioctlsocket(sock.fd, FIONREAD, reinterpret_cast<u_long*>(&bytes_available));
 #else
             ioctl(sock.fd, FIONREAD, &bytes_available);
 #endif
