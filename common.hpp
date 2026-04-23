@@ -25,7 +25,7 @@
 #include "utils.hpp"
 
 namespace byteo {
-    void connect(descriptor desc, address addr) {
+    inline void connect(descriptor desc, address addr) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("connect(): socket closed");
@@ -43,7 +43,7 @@ namespace byteo {
         sock.raddress = addr;
     }
 
-    void connect(descriptor desc, address_list addr_list) {
+    inline void connect(descriptor desc, address_list addr_list) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("connect(): socket closed");
@@ -67,7 +67,7 @@ namespace byteo {
         if (!sock.working) throw std::runtime_error("connect(): Unable to connect to host: " + std::string(strerror(errno)));
     }
 
-    void bind(descriptor desc, address addr) {
+    inline void bind(descriptor desc, address addr) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("bind(): socket closed");
@@ -84,7 +84,7 @@ namespace byteo {
         sock.laddress = addr;
     }
 
-    void bind(descriptor desc, address_list addr_list) {
+    inline void bind(descriptor desc, address_list addr_list) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("bind(): socket closed");
@@ -107,7 +107,7 @@ namespace byteo {
         if (!sock.working) throw std::runtime_error("bind(): Unable to bind to host: "  + std::string(strerror(errno)));
     }
 
-    descriptor accept(descriptor desc) {
+    inline descriptor accept(descriptor desc) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("accept(): socket closed");
@@ -146,7 +146,7 @@ namespace byteo {
         return new_desc;
     }
 
-    void listen(descriptor desc, int32_t __listen) {
+    inline void listen(descriptor desc, int32_t __listen) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("listen(): socket closed");
@@ -158,7 +158,7 @@ namespace byteo {
         sock.listen = true;
     }
 
-    int64_t read(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
+    inline int64_t read(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -175,7 +175,7 @@ namespace byteo {
         return read_size;
     }
 
-    std::vector<std::byte> read(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline std::vector<std::byte> read(descriptor desc, int64_t size, int32_t flags = 0) {
         std::vector<std::byte> buffer(size);
         buffer.resize(read(desc, buffer.data(), size, flags));
 
@@ -183,7 +183,7 @@ namespace byteo {
     }
 
     template<typename blob_type>
-    blob_type readblob(descriptor desc, int32_t flags = 0) {
+    inline blob_type readblob(descriptor desc, int32_t flags = 0) {
         blob_type blob;
 
         if (read(desc, &blob, sizeof(blob_type), flags) < sizeof(blob_type)) throw std::runtime_error("readblob(): corrupted blob");
@@ -191,14 +191,14 @@ namespace byteo {
         return blob;
     }
 
-    std::string readstring(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline std::string readstring(descriptor desc, int64_t size, int32_t flags = 0) {
         std::string buffer(size, 0);
         buffer.resize(read(desc, buffer.data(), size, flags));
 
         return buffer;
     }
 
-    int64_t write(descriptor desc, const void* buffer, int64_t size, int32_t flags = 0) {
+    inline int64_t write(descriptor desc, const void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -213,20 +213,20 @@ namespace byteo {
         return ::send(fd, reinterpret_cast<const char*>(buffer), size, flags);
     }
 
-    int64_t write(descriptor desc, const std::vector<std::byte>& buffer, int32_t flags = 0) {
+    inline int64_t write(descriptor desc, const std::vector<std::byte>& buffer, int32_t flags = 0) {
         return write(desc, buffer.data(), buffer.size(), flags);
     }
 
     template<typename blob_type>
-    int64_t writeblob(descriptor desc, const blob_type& blob, int32_t flags = 0) {
+    inline int64_t writeblob(descriptor desc, const blob_type& blob, int32_t flags = 0) {
         return write(desc, &blob, sizeof(blob_type), flags);
     }
 
-    int64_t writestring(descriptor desc, const std::string& string, int32_t flags = 0) {
+    inline int64_t writestring(descriptor desc, const std::string& string, int32_t flags = 0) {
         return write(desc, string.c_str(), string.size(), flags);
     }
 
-    dataless_datagram readfrom(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
+    inline dataless_datagram readfrom(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("readfrom(): socket closed");
@@ -248,7 +248,7 @@ namespace byteo {
         return {address::from_sockaddr(tmp_addr), read_size};
     }
 
-    datagram readfrom(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline datagram readfrom(descriptor desc, int64_t size, int32_t flags = 0) {
         std::vector<std::byte> buffer(size);
 
         dataless_datagram tmp = readfrom(desc, buffer.data(), size, flags);
@@ -257,7 +257,7 @@ namespace byteo {
         return {tmp.addr, buffer};
     }
 
-    string_datagram readstringfrom(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline string_datagram readstringfrom(descriptor desc, int64_t size, int32_t flags = 0) {
         std::string buffer(size, 0);
         dataless_datagram read = readfrom(desc, buffer.data(), size, flags);
 
@@ -266,7 +266,7 @@ namespace byteo {
         return {read.addr, buffer};
     }
 
-    int64_t writeto(descriptor desc, const void* buffer, int64_t size, address addr, int32_t flags = 0) {
+    inline int64_t writeto(descriptor desc, const void* buffer, int64_t size, address addr, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("writeto(): socket closed");
@@ -283,15 +283,15 @@ namespace byteo {
         return ::sendto(fd, reinterpret_cast<const char*>(buffer), size, flags, reinterpret_cast<sockaddr*>(&tmp_addr), sock.sockaddr_size);
     }
 
-    int64_t writeto(descriptor desc, const std::vector<std::byte>& buffer, address addr, int32_t flags = 0) {
+    inline int64_t writeto(descriptor desc, const std::vector<std::byte>& buffer, address addr, int32_t flags = 0) {
         return writeto(desc, buffer.data(), buffer.size(), addr, flags);
     }
 
-    int64_t writestringto(descriptor desc, const std::string& string, address addr, int32_t flags = 0) {
+    inline int64_t writestringto(descriptor desc, const std::string& string, address addr, int32_t flags = 0) {
         return writeto(desc, string.c_str(), string.size(), addr, flags);
     }
 
-    void shutdown(descriptor desc) {
+    inline void shutdown(descriptor desc) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("shutdown(): socket closed");
@@ -303,7 +303,7 @@ namespace byteo {
         sock.working = false;
     }
 
-    void close(descriptor desc) {
+    inline void close(descriptor desc) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("close(): socket closed");

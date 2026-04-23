@@ -42,11 +42,11 @@ namespace byteo {
         std::string data;
     };
 
-    bool operator==(const descriptor& obj1, const descriptor& obj2) {
+    inline bool operator==(const descriptor& obj1, const descriptor& obj2) {
         return obj1.id == obj2.id && obj1.fingerprint == obj2.fingerprint;
     }
 
-    bool operator!=(const descriptor& obj1, const descriptor& obj2) {
+    inline bool operator!=(const descriptor& obj1, const descriptor& obj2) {
         return !(obj1 == obj2);
     }
 }

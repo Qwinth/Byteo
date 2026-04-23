@@ -23,7 +23,7 @@ namespace byteo {
     inline std::atomic_bool openssl_init = false;
 
     namespace utils::ssl {
-        void init() {
+        inline void init() {
             SSL_load_error_strings();
             SSL_library_init();
             OpenSSL_add_all_algorithms();
@@ -31,23 +31,23 @@ namespace byteo {
             openssl_init = true;
         }
 
-        ssl_ctx new_server_context() {
+        inline ssl_ctx new_server_context() {
             return SSL_CTX_new(SSLv23_server_method());
         }
 
-        ssl_ctx new_client_context() {
+        inline ssl_ctx new_client_context() {
             return SSL_CTX_new(SSLv23_client_method());
         }
 
-        void load_cert(ssl_ctx ctx, const std::string& cert) {
+        inline void load_cert(ssl_ctx ctx, const std::string& cert) {
             SSL_CTX_use_certificate_file(ctx, cert.c_str(), SSL_FILETYPE_PEM);
         }
 
-        void load_key(ssl_ctx ctx, const std::string& key) {
+        inline void load_key(ssl_ctx ctx, const std::string& key) {
             SSL_CTX_use_PrivateKey_file(ctx, key.c_str(), SSL_FILETYPE_PEM);
         }
 
-        void load_trust(ssl_ctx ctx, const std::string& ca_path) {
+        inline void load_trust(ssl_ctx ctx, const std::string& ca_path) {
             SSL_CTX_load_verify_locations(ctx, ca_path.c_str(), nullptr);
             SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, nullptr);
         }
@@ -56,13 +56,13 @@ namespace byteo {
         //     SSL_CTX_set_verify(ctx, verify, nullptr);
         // }
 
-        void free_context(ssl_ctx ctx) {
+        inline void free_context(ssl_ctx ctx) {
             SSL_CTX_free(ctx);
         }
     }
 
     namespace ssl {
-        void enable(descriptor desc, ssl_ctx ctx) {
+        inline void enable(descriptor desc, ssl_ctx ctx) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::enable(): socket closed");
@@ -75,7 +75,7 @@ namespace byteo {
             ssl_conn_table.try_emplace(desc.id, ssl);
         }
 
-        void handshake(descriptor desc) {
+        inline void handshake(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::handshake(): socket closed");
@@ -87,7 +87,7 @@ namespace byteo {
             else SSL_connect(ssl);
         }
 
-        std::vector<int8_t> read(descriptor desc, int64_t size) {
+        inline std::vector<int8_t> read(descriptor desc, int64_t size) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::read(): socket closed");
@@ -100,13 +100,13 @@ namespace byteo {
             return buffer;
         }
 
-        std::string readstring(descriptor desc, int64_t size) {
+        inline std::string readstring(descriptor desc, int64_t size) {
             std::vector<int8_t> buffer = byteo::ssl::read(desc, size);
 
             return std::string(buffer.begin(), buffer.end());
         }
 
-        int64_t write(descriptor desc, std::vector<int8_t> buffer) {
+        inline int64_t write(descriptor desc, std::vector<int8_t> buffer) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::write(): socket closed");
@@ -116,11 +116,11 @@ namespace byteo {
             return ::SSL_write(ssl, buffer.data(), buffer.size());
         }
 
-        int64_t writestring(descriptor desc, std::string string) {
+        inline int64_t writestring(descriptor desc, std::string string) {
             return byteo::ssl::write(desc, std::vector<int8_t>(string.begin(), string.end()));
         }
 
-        void shutdown(descriptor desc) {
+        inline void shutdown(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::shutdown(): socket closed");
