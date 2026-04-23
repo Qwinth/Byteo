@@ -35,10 +35,10 @@ namespace byteo {
     inline std::recursive_mutex socket_table_mutex;
 
 #ifdef _WIN32
-    std::mutex wsa_mtx;
+    inline std::mutex wsa_mtx;
 
-    bool wsa_init;
+    inline bool wsa_init;
 
-    WSAData wsa_data;
+    inline WSAData wsa_data;
 #endif
 }
