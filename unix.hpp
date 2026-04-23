@@ -18,8 +18,8 @@
 
 namespace byteo::unix {
     namespace stream {
-        descriptor socket() {
-            int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
+        inline descriptor socket() {
+            int32_t id = byteo::utils::find_free_id();
             uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
             byteo::utils::socket& sock = socket_table.try_emplace(id).first->second;
@@ -46,7 +46,7 @@ namespace byteo::unix {
     }
 
     namespace datagram {
-        descriptor socket() {
+        inline descriptor socket() {
             int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
             uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
@@ -73,11 +73,11 @@ namespace byteo::unix {
         }
     }
 
-    void unlink(std::string path) {
+    inline void unlink(std::string path) {
         ::unlink(path.c_str());
     }
 
-    void unlink(descriptor desc) {
+    inline void unlink(descriptor desc) {
         std::unique_lock lock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("close(unix): socket closed");

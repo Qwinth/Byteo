@@ -28,7 +28,17 @@ namespace byteo {
         inline std::uniform_int_distribution<std::mt19937_64::result_type> random_s32(0, std::numeric_limits<int32_t>::max());
         inline std::uniform_int_distribution<std::mt19937_64::result_type> random_u64(0, std::numeric_limits<uint64_t>::max());
 
-        bool descriptor_ok(descriptor desc) {
+        inline int32_t find_free_id() {
+            std::unique_lock lock(socket_table_mutex);
+
+            while (true) {
+                int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
+
+                if (socket_table.find(id) == socket_table.end()) return id;
+            }
+        }
+
+        inline bool descriptor_ok(descriptor desc) {
             auto it = socket_table.find(desc.id);
 
             if (it == socket_table.end()) return false;
@@ -36,7 +46,7 @@ namespace byteo {
             return desc.fingerprint == it->second.fingerprint;
         }
 
-        fd_t realfd(descriptor desc) {
+        inline fd_t realfd(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!descriptor_ok(desc)) throw std::runtime_error("realfd(): socket closed");
@@ -46,7 +56,7 @@ namespace byteo {
             return sock.fd;
         }
 
-        descriptor get_descriptor(fd_t fd) {
+        inline descriptor get_descriptor(fd_t fd) {
             std::unique_lock lock(socket_table_mutex);
 
             for (auto& [id, socket] : socket_table) if (socket.fd == fd) return {id, socket.fingerprint};
@@ -55,7 +65,7 @@ namespace byteo {
         }
 
 #ifdef _WIN32
-        void wsainit() {
+        inline void wsainit() {
             std::unique_lock lock(wsa_mtx);
 
             if (!wsa_init) WSAStartup(MAKEWORD(2, 2), &wsa_data);
@@ -63,7 +73,7 @@ namespace byteo {
 #endif
 
         template<typename T>
-        void setsockopt(descriptor desc, int32_t level, int32_t optname, T optval) {
+        inline void setsockopt(descriptor desc, int32_t level, int32_t optname, T optval) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!descriptor_ok(desc)) throw std::runtime_error("setsockopt(): socket closed");
@@ -74,7 +84,7 @@ namespace byteo {
         }
 
         template<>
-        void setsockopt<bool>(descriptor desc, int32_t level, int32_t optname, bool optval) {
+        inline void setsockopt<bool>(descriptor desc, int32_t level, int32_t optname, bool optval) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!descriptor_ok(desc)) throw std::runtime_error("setsockopt(): socket closed");
@@ -87,7 +97,7 @@ namespace byteo {
         }
 
         template<typename T>
-        int32_t getsockopt(descriptor desc, int32_t level, int32_t optname, T& optval, socklen_t size = sizeof(T)) {
+        inline int32_t getsockopt(descriptor desc, int32_t level, int32_t optname, T& optval, socklen_t size = sizeof(T)) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!descriptor_ok(desc)) throw std::runtime_error("getsockopt(): socket closed");
@@ -99,7 +109,7 @@ namespace byteo {
             return size;
         }
 
-        address getsockname(descriptor desc) {
+        inline address getsockname(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getsockname(): socket closed");
@@ -114,7 +124,7 @@ namespace byteo {
             return address::from_sockaddr(my_addr);
         }
 
-        address getpeername(descriptor desc) {
+        inline address getpeername(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getpeername(): socket closed");
@@ -129,7 +139,7 @@ namespace byteo {
             return address::from_sockaddr(my_addr);
         }
 
-        uint32_t tcpreadavailable(descriptor desc) {
+        inline uint32_t tcpreadavailable(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getpeername(): socket closed");

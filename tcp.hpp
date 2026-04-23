@@ -19,12 +19,12 @@
 
 namespace byteo {
     namespace ipv4::tcp {
-        descriptor socket() {
+        inline descriptor socket() {
 #ifdef _WIN32
             byteo::utils::wsainit();
 #endif
 
-            int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
+            int32_t id = byteo::utils::find_free_id();
             uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
             byteo::utils::socket& sock = socket_table.try_emplace(id).first->second;
@@ -52,7 +52,7 @@ namespace byteo {
     }
 
     namespace ipv6::tcp {
-        descriptor socket() {
+        inline descriptor socket() {
 #ifdef _WIN32
             byteo::utils::wsainit();
 #endif
