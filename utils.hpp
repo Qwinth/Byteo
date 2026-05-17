@@ -68,7 +68,11 @@ namespace byteo {
         inline void wsainit() {
             std::unique_lock lock(wsa_mtx);
 
-            if (!wsa_init) WSAStartup(MAKEWORD(2, 2), &wsa_data);
+            if (!wsa_init) {
+                WSAStartup(MAKEWORD(2, 2), &wsa_data);
+
+                wsa_init = true;
+            }
         }
 #endif
 
