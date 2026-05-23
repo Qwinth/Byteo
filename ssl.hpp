@@ -63,7 +63,7 @@ namespace byteo {
 
     namespace ssl {
         inline void enable(descriptor desc, ssl_ctx ctx) {
-            std::unique_lock lock(socket_table_mutex);
+            std::unique_lock tableLock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::enable(): socket closed");
 
@@ -76,7 +76,7 @@ namespace byteo {
         }
 
         inline void handshake(descriptor desc) {
-            std::unique_lock lock(socket_table_mutex);
+            std::unique_lock tableLock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::handshake(): socket closed");
 
@@ -87,41 +87,58 @@ namespace byteo {
             else SSL_connect(ssl);
         }
 
-        inline std::vector<int8_t> read(descriptor desc, int64_t size) {
-            std::unique_lock lock(socket_table_mutex);
+        inline int64_t read(descriptor desc, void* buffer, int64_t size) {
+            std::unique_lock tableLock(socket_table_mutex);
 
-            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::read(): socket closed");
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
 
+            byteo::utils::socket& sock = socket_table.at(desc.id);
             ssl_conn ssl = ssl_conn_table.at(desc.id);
 
+            tableLock.unlock();
+            std::unique_lock readLock(sock.readMtx);
+
+            return ::SSL_read(ssl, buffer, size);
+        }
+
+        inline std::vector<int8_t> read(descriptor desc, int64_t size) {
             std::vector<int8_t> buffer(size);
-            buffer.resize(::SSL_read(ssl, buffer.data(), size));
+            buffer.resize(byteo::ssl::read(desc, buffer.data(), size));
 
             return buffer;
         }
 
         inline std::string readstring(descriptor desc, int64_t size) {
-            std::vector<int8_t> buffer = byteo::ssl::read(desc, size);
+            std::string buffer(size, 0);
+            buffer.resize(byteo::ssl::read(desc, buffer.data(), size));
 
-            return std::string(buffer.begin(), buffer.end());
+            return buffer;
         }
 
-        inline int64_t write(descriptor desc, std::vector<int8_t> buffer) {
-            std::unique_lock lock(socket_table_mutex);
+        inline int64_t write(descriptor desc, const void* buffer, int64_t size) {
+            std::unique_lock tableLock(socket_table_mutex);
 
-            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::write(): socket closed");
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
 
+            byteo::utils::socket& sock = socket_table.at(desc.id);
             ssl_conn ssl = ssl_conn_table.at(desc.id);
 
-            return ::SSL_write(ssl, buffer.data(), buffer.size());
+            tableLock.unlock();
+            std::unique_lock writeLock(sock.writeMtx);
+
+            return ::SSL_write(ssl, buffer, size);
         }
 
-        inline int64_t writestring(descriptor desc, std::string string) {
-            return byteo::ssl::write(desc, std::vector<int8_t>(string.begin(), string.end()));
+        inline int64_t write(descriptor desc, const std::vector<int8_t>& buffer) {
+            return byteo::ssl::write(desc, buffer.data(), buffer.size());
+        }
+
+        inline int64_t writestring(descriptor desc, const std::string& string) {
+            return byteo::ssl::write(desc, string.c_str(), string.size());
         }
 
         inline void shutdown(descriptor desc) {
-            std::unique_lock lock(socket_table_mutex);
+            std::unique_lock tableLock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("ssl::shutdown(): socket closed");
 
