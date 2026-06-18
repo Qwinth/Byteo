@@ -42,6 +42,24 @@ namespace byteo {
         std::string data;
     };
 
+    template<class T>
+    class return_status {
+    public:
+        return_status(const T& obj) : data(obj) {}
+        return_status(const T& obj, int32_t status) : data(obj), code(status) {}
+
+        int32_t status_code() { return code; }
+        bool ok() { return !code; }
+
+        T value() { return data; }
+
+        operator T() { return data; }
+    
+    private:
+        T data;
+        int32_t code = 0;
+    };
+
     inline bool operator==(const descriptor& obj1, const descriptor& obj2) {
         return obj1.id == obj2.id && obj1.fingerprint == obj2.fingerprint;
     }
