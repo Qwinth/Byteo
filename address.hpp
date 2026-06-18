@@ -79,7 +79,7 @@ namespace byteo {
         }
 
 #ifdef __linux__
-        address(std::string unix_addr) : __family(AF_UNIX) {
+        address(const std::string& unix_addr) : __family(AF_UNIX) {
             std::get<raw_address>(__addr).fill(0);
             std::copy(unix_addr.begin(), unix_addr.end(), std::get<raw_address>(__addr).begin());
         }
