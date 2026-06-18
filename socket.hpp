@@ -14,6 +14,8 @@ namespace byteo {
 
             uint64_t fingerprint;
 
+            std::atomic_uint16_t refcount;
+
             std::atomic_bool working;
             std::atomic_bool blocking;
             std::atomic_bool listen;
