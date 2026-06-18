@@ -16,7 +16,8 @@
 #include "utils.hpp"
 
 namespace byteo {
-    using ssl_ctx = SSL_CTX*;
+    using ssl_ctx_type = SSL_CTX;
+    using ssl_ctx = ssl_ctx_type*;
     using ssl_conn = SSL*;
 
     inline std::map<int32_t, ssl_conn> ssl_conn_table;
@@ -72,7 +73,7 @@ namespace byteo {
             ssl_conn ssl = SSL_new(ctx);
             SSL_set_fd(ssl, sock.fd);
 
-            ssl_conn_table.try_emplace(desc.id, ssl);
+            ssl_conn_table[desc.id] = ssl;
         }
 
         inline void handshake(descriptor desc) {
