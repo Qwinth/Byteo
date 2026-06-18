@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdexcept>
 #include <mutex>
+#include <optional>
 #include <cstddef>
 #include <cstdint>
 
@@ -107,7 +108,7 @@ namespace byteo {
         if (!sock.working) throw std::runtime_error("bind(): Unable to bind to host: "  + std::string(strerror(errno)));
     }
 
-    inline descriptor accept(descriptor desc) {
+    inline return_status<descriptor> accept(descriptor desc) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("accept(): socket closed");
@@ -117,19 +118,28 @@ namespace byteo {
         sockaddr_storage addr{};
         socklen_t socklen = sock.sockaddr_size;
 
+        int32_t prev_errno = errno;
+
         int32_t new_fd = ::accept(sock.fd, reinterpret_cast<sockaddr*>(&addr), &socklen);
 
-        if (new_fd == -1) throw std::runtime_error("accept(): Unable to accept connection: " + std::string(strerror(errno)));
+        if (new_fd == -1) {
+            int32_t post_errno = errno;
+            errno = prev_errno;
+
+            return {{}, post_errno};
+        }
 
         int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
         uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
         descriptor new_desc = {id, fingerprint};
 
-        byteo::utils::socket& new_sock = socket_table.try_emplace(id).first->second;
+        byteo::utils::socket& new_sock = socket_table[id];
 
         new_sock.fd = new_fd;
         new_sock.fingerprint = fingerprint;
+
+        new_sock.refcount = 1;
 
         new_sock.working = true;
         new_sock.blocking = true;
@@ -158,7 +168,7 @@ namespace byteo {
         sock.listen = true;
     }
 
-    inline int64_t read(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
+    inline return_status<int64_t> read(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -170,20 +180,34 @@ namespace byteo {
         tableLock.unlock();
         std::unique_lock readLock(sock.readMtx);
 
+        int32_t prev_errno = errno;
+
         int64_t read_size = ::recv(fd, reinterpret_cast<char*>(buffer), size, flags);
+
+        if (read_size == -1) {
+            int32_t post_errno = errno;
+            errno = prev_errno;
+
+            return {{}, post_errno};
+        }
 
         return read_size;
     }
 
-    inline std::vector<std::byte> read(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline return_status<std::vector<std::byte>> read(descriptor desc, int64_t size, int32_t flags = 0) {
         std::vector<std::byte> buffer(size);
-        buffer.resize(read(desc, buffer.data(), size, flags));
+
+        return_status status = read(desc, buffer.data(), size, flags);
+
+        if (!status.ok()) return {{}, status.status_code()};
+        
+        buffer.resize(status);
 
         return buffer;
     }
 
     template<typename blob_type>
-    inline blob_type readblob(descriptor desc, int32_t flags = 0) {
+    inline return_status<blob_type> readblob(descriptor desc, int32_t flags = 0) {
         blob_type blob;
 
         if (read(desc, &blob, sizeof(blob_type), flags) < sizeof(blob_type)) throw std::runtime_error("readblob(): corrupted blob");
@@ -191,14 +215,19 @@ namespace byteo {
         return blob;
     }
 
-    inline std::string readstring(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline return_status<std::string> readstring(descriptor desc, int64_t size, int32_t flags = 0) {
         std::string buffer(size, 0);
-        buffer.resize(read(desc, buffer.data(), size, flags));
+
+        return_status status = read(desc, buffer.data(), size, flags);
+
+        if (!status.ok()) return {{}, status.status_code()};
+
+        buffer.resize(status);
 
         return buffer;
     }
 
-    inline int64_t write(descriptor desc, const void* buffer, int64_t size, int32_t flags = 0) {
+    inline return_status<int64_t> write(descriptor desc, const void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -210,23 +239,34 @@ namespace byteo {
         tableLock.unlock();
         std::unique_lock writeLock(sock.writeMtx);
 
-        return ::send(fd, reinterpret_cast<const char*>(buffer), size, flags);
+        int32_t prev_errno = errno;
+
+        int64_t write_size = ::send(fd, reinterpret_cast<const char*>(buffer), size, flags);
+
+        if (write_size == -1) {
+            int32_t post_errno = errno;
+            errno = prev_errno;
+
+            return {{}, post_errno};
+        }
+
+        return write_size;
     }
 
-    inline int64_t write(descriptor desc, const std::vector<std::byte>& buffer, int32_t flags = 0) {
+    inline return_status<int64_t> write(descriptor desc, const std::vector<std::byte>& buffer, int32_t flags = 0) {
         return write(desc, buffer.data(), buffer.size(), flags);
     }
 
     template<typename blob_type>
-    inline int64_t writeblob(descriptor desc, const blob_type& blob, int32_t flags = 0) {
+    inline return_status<int64_t> writeblob(descriptor desc, const blob_type& blob, int32_t flags = 0) {
         return write(desc, &blob, sizeof(blob_type), flags);
     }
 
-    inline int64_t writestring(descriptor desc, const std::string& string, int32_t flags = 0) {
+    inline return_status<int64_t> writestring(descriptor desc, const std::string& string, int32_t flags = 0) {
         return write(desc, string.c_str(), string.size(), flags);
     }
 
-    inline dataless_datagram readfrom(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
+    inline return_status<dataless_datagram> readfrom(descriptor desc, void* buffer, int64_t size, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("readfrom(): socket closed");
@@ -241,32 +281,47 @@ namespace byteo {
         sockaddr_storage tmp_addr{};
         socklen_t socklen = sock.sockaddr_size;
 
+        int32_t prev_errno = errno;
+
         int64_t read_size = ::recvfrom(fd, reinterpret_cast<char*>(buffer), size, flags, reinterpret_cast<sockaddr*>(&tmp_addr), &socklen);
 
-        if (!socklen) return {nulladdr, read_size};
+        if (read_size == -1) {
+            int32_t post_errno = errno;
+            errno = prev_errno;
 
-        return {address::from_sockaddr(tmp_addr), read_size};
+            return {{}, post_errno};
+        }
+
+        if (!socklen) return dataless_datagram{nulladdr, read_size};
+
+        return dataless_datagram{address::from_sockaddr(tmp_addr), read_size};
     }
 
-    inline datagram readfrom(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline return_status<datagram> readfrom(descriptor desc, int64_t size, int32_t flags = 0) {
         std::vector<std::byte> buffer(size);
 
-        dataless_datagram tmp = readfrom(desc, buffer.data(), size, flags);
-        buffer.resize(tmp.size);
+        return_status status = readfrom(desc, buffer.data(), size, flags);
 
-        return {tmp.addr, buffer};
+        if (!status.ok()) return {{}, status.status_code()};
+        
+        buffer.resize(status.value().size);
+
+        return datagram{status.value().addr, buffer};
     }
 
-    inline string_datagram readstringfrom(descriptor desc, int64_t size, int32_t flags = 0) {
+    inline return_status<string_datagram> readstringfrom(descriptor desc, int64_t size, int32_t flags = 0) {
         std::string buffer(size, 0);
-        dataless_datagram read = readfrom(desc, buffer.data(), size, flags);
 
-        buffer.resize(read.size);
+        return_status status = readfrom(desc, buffer.data(), size, flags);
 
-        return {read.addr, buffer};
+        if (!status.ok()) return {{}, status.status_code()};
+
+        buffer.resize(status.value().size);
+
+        return string_datagram{status.value().addr, buffer};
     }
 
-    inline int64_t writeto(descriptor desc, const void* buffer, int64_t size, address addr, int32_t flags = 0) {
+    inline return_status<int64_t> writeto(descriptor desc, const void* buffer, int64_t size, address addr, int32_t flags = 0) {
         std::unique_lock tableLock(socket_table_mutex);
 
         if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("writeto(): socket closed");
@@ -280,14 +335,25 @@ namespace byteo {
 
         sockaddr_storage tmp_addr = addr;
 
-        return ::sendto(fd, reinterpret_cast<const char*>(buffer), size, flags, reinterpret_cast<sockaddr*>(&tmp_addr), sock.sockaddr_size);
+        int32_t prev_errno = errno;
+
+        int64_t write_size = ::sendto(fd, reinterpret_cast<const char*>(buffer), size, flags, reinterpret_cast<sockaddr*>(&tmp_addr), sock.sockaddr_size);
+
+        if (write_size == -1) {
+            int32_t post_errno = errno;
+            errno = prev_errno;
+
+            return {{}, post_errno};
+        }
+
+        return write_size;
     }
 
-    inline int64_t writeto(descriptor desc, const std::vector<std::byte>& buffer, address addr, int32_t flags = 0) {
+    inline return_status<int64_t> writeto(descriptor desc, const std::vector<std::byte>& buffer, address addr, int32_t flags = 0) {
         return writeto(desc, buffer.data(), buffer.size(), addr, flags);
     }
 
-    inline int64_t writestringto(descriptor desc, const std::string& string, address addr, int32_t flags = 0) {
+    inline return_status<int64_t> writestringto(descriptor desc, const std::string& string, address addr, int32_t flags = 0) {
         return writeto(desc, string.c_str(), string.size(), addr, flags);
     }
 
@@ -318,11 +384,8 @@ namespace byteo {
         ::closesocket(sock.fd);
 #endif
         
-        std::unique_lock readLock(sock.readMtx);
-        std::unique_lock writeLock(sock.writeMtx);
-
-        readLock.unlock();
-        writeLock.unlock();
+        std::unique_lock{sock.readMtx}.unlock();
+        std::unique_lock{sock.writeMtx}.unlock();
 
         socket_table.erase(desc.id);
     }

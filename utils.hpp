@@ -2,11 +2,13 @@
 #include <random>
 #include <limits>
 #include <stdexcept>
+#include <optional>
 
 #ifdef __linux__
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #endif
 
@@ -56,12 +58,12 @@ namespace byteo {
             return sock.fd;
         }
 
-        inline descriptor get_descriptor(fd_t fd) {
+        inline std::optional<descriptor> get_descriptor(fd_t fd) {
             std::unique_lock lock(socket_table_mutex);
 
-            for (auto& [id, socket] : socket_table) if (socket.fd == fd) return {id, socket.fingerprint};
+            for (auto& [id, socket] : socket_table) if (socket.fd == fd) return descriptor{id, socket.fingerprint};
 
-            return {};
+            return std::nullopt;
         }
 
 #ifdef _WIN32
@@ -142,11 +144,11 @@ namespace byteo {
 
             return address::from_sockaddr(my_addr);
         }
-
-        inline uint32_t tcpreadavailable(descriptor desc) {
+        
+        inline uint32_t readavailable(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
-            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getpeername(): socket closed");
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("readavailable(): socket closed");
 
             byteo::utils::socket& sock = socket_table.at(desc.id);
 
@@ -157,6 +159,63 @@ namespace byteo {
             ioctl(sock.fd, FIONREAD, &bytes_available);
 #endif
             return bytes_available;
+        }
+
+        inline void setblocking(descriptor desc, bool blocking) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("setblocking(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+#ifdef _WIN32
+            uitn64_t mode = blocking ? 0 : 1;
+            ioctlsocket(sock.fd, FIONBIO, &mode);
+#else
+            int flags = fcntl(sock.fd, F_GETFL, 0);
+
+            fcntl(sock.fd, F_SETFL, (blocking) ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK));
+#endif
+            sock.blocking = blocking;
+        }
+
+        inline bool getblocking(descriptor desc) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("setblocking(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+
+            return sock.blocking;
+        }
+
+        inline uint16_t refcount(descriptor desc) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("refcount(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+
+            return sock.refcount;
+        }
+
+        inline void refinc(descriptor desc) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("refinc(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+
+            sock.refcount++;
+        }
+
+        inline void refdec(descriptor desc) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("refdec(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+
+            sock.refcount++;
         }
     }
 }
