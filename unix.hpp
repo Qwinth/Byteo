@@ -22,10 +22,12 @@ namespace byteo::unix {
             int32_t id = byteo::utils::find_free_id();
             uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
-            byteo::utils::socket& sock = socket_table.try_emplace(id).first->second;
+            byteo::utils::socket& sock = socket_table[id];
 
             sock.fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
             sock.fingerprint = fingerprint;
+
+            sock.refcount = 1;
 
             sock.working = false;
             sock.blocking = true;
@@ -50,10 +52,12 @@ namespace byteo::unix {
             int32_t id = byteo::utils::random_s32(byteo::utils::mersenne);
             uint64_t fingerprint = byteo::utils::random_u64(byteo::utils::mersenne);
 
-            byteo::utils::socket& sock = socket_table.try_emplace(id).first->second;
+            byteo::utils::socket& sock = socket_table[id];
 
             sock.fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
             sock.fingerprint = fingerprint;
+
+            sock.refcount = 1;
 
             sock.working = false;
             sock.blocking = true;
