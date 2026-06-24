@@ -22,14 +22,11 @@
  Just include the headers in your project:
 
  ```cpp
- #include "byteo/socket.hpp"
  #include "byteo/tcp.hpp"
  #include "byteo/udp.hpp"
  #include "byteo/unix.hpp"
- #include "byteo/common.hpp"
  #include "byteo/ssl.hpp"
  #include "byteo/dns.hpp"
- #include "byteo/utils.hpp"
  ```
 
  ---
@@ -40,7 +37,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "tcp.hpp"
  #include "dns.hpp"
 
@@ -69,7 +65,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "tcp.hpp"
  #include "dns.hpp"
  
@@ -91,7 +86,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "unix.hpp"
  
  int main() {
@@ -119,7 +113,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "tcp.hpp"
  #include "dns.hpp"
  #include "ssl.hpp"
@@ -159,7 +152,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "tcp.hpp"
  #include "dns.hpp"
  #include "ssl.hpp"
@@ -190,7 +182,6 @@
  ```cpp
  #include <iostream>
  #include <algorithm>
- #include "socket.hpp"
  #include "udp.hpp"
  #include "dns.hpp"
  
@@ -218,7 +209,6 @@
 
  ```cpp
  #include <iostream>
- #include "socket.hpp"
  #include "udp.hpp"
  #include "dns.hpp"
  
