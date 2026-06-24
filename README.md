@@ -149,6 +149,7 @@
      }
  
      byteo::close(sock);
+     byteo::utils::ssl::free_context(ctx);
  }
  ```
 
@@ -178,6 +179,7 @@
  
      byteo::ssl::shutdown(sock);
      byteo::close(sock);
+     byteo::utils::ssl::free_context(ctx);
  }
  ```
 
@@ -249,6 +251,7 @@
  - UDP support ✅
  - Unified API for both stream and datagram sockets ✅
  - Add more error checking
+ - Add non-blocking sockets support ✅
 
  ---
 
