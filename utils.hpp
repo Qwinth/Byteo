@@ -167,7 +167,7 @@ namespace byteo {
 
             byteo::utils::socket& sock = socket_table.at(desc.id);
 #ifdef _WIN32
-            uitn64_t mode = blocking ? 0 : 1;
+            uitn64_t mode = blocking
             ioctlsocket(sock.fd, FIONBIO, &mode);
 #else
             int flags = fcntl(sock.fd, F_GETFL, 0);
