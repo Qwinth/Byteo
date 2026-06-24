@@ -183,7 +183,7 @@ namespace byteo {
 
         int32_t prev_errno = errno;
 
-        int64_t read_size = ::recv(fd, reinterpret_cast<char*>(buffer), size, flags);
+        int64_t read_size = ::recv(fd, reinterpret_cast<std::byte*>(buffer), size, flags);
 
         if (read_size == -1) {
             int32_t post_errno = errno;
