@@ -242,7 +242,7 @@ namespace byteo {
 
         int32_t prev_errno = errno;
 
-        int64_t write_size = ::send(fd, reinterpret_cast<const char*>(buffer), size, flags);
+        int64_t write_size = ::send(fd, reinterpret_cast<const std::byte*>(buffer), size, flags);
 
         if (write_size == -1) {
             int32_t post_errno = errno;
