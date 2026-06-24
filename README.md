@@ -257,4 +257,4 @@
 
  ## License
 
- Apache-2.0 License
+ Boost Software License - Version 1.0
