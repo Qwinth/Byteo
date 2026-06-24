@@ -74,7 +74,9 @@ namespace byteo {
                     pollfd& pfd = fds_copy[i];
 
                     if (pfd.revents) {
-                        ret.push_back({utils::get_descriptor(pfd.fd), pfd.revents});
+                        result evdesc = utils::get_descriptor(pfd.fd);
+
+                        if (evdesc.ok()) ret.push_back({evdesc, pfd.revents});
 
                         n_events++;
                         pfd.revents = 0;
