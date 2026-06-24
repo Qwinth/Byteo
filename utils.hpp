@@ -2,7 +2,6 @@
 #include <random>
 #include <limits>
 #include <stdexcept>
-#include <optional>
 
 #ifdef __linux__
 #include <sys/socket.h>
@@ -58,12 +57,12 @@ namespace byteo {
             return sock.fd;
         }
 
-        inline std::optional<descriptor> get_descriptor(fd_t fd) {
+        inline result<descriptor> get_descriptor(fd_t fd) {
             std::unique_lock lock(socket_table_mutex);
 
             for (auto& [id, socket] : socket_table) if (socket.fd == fd) return descriptor{id, socket.fingerprint};
 
-            return std::nullopt;
+            return {{}, -1};
         }
 
 #ifdef _WIN32
