@@ -88,7 +88,7 @@ namespace byteo {
             else SSL_connect(ssl);
         }
 
-        inline int64_t read(descriptor desc, void* buffer, int64_t size) {
+        inline result<int64_t> read(descriptor desc, void* buffer, int64_t size) {
             std::unique_lock tableLock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -102,21 +102,21 @@ namespace byteo {
             return ::SSL_read(ssl, buffer, size);
         }
 
-        inline std::vector<int8_t> read(descriptor desc, int64_t size) {
-            std::vector<int8_t> buffer(size);
+        inline result<std::vector<std::byte>> read(descriptor desc, int64_t size) {
+            std::vector<std::byte> buffer(size);
             buffer.resize(byteo::ssl::read(desc, buffer.data(), size));
 
             return buffer;
         }
 
-        inline std::string readstring(descriptor desc, int64_t size) {
+        inline result<std::string> readstring(descriptor desc, int64_t size) {
             std::string buffer(size, 0);
             buffer.resize(byteo::ssl::read(desc, buffer.data(), size));
 
             return buffer;
         }
 
-        inline int64_t write(descriptor desc, const void* buffer, int64_t size) {
+        inline result<int64_t> write(descriptor desc, const void* buffer, int64_t size) {
             std::unique_lock tableLock(socket_table_mutex);
 
             if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("read(): socket closed");
@@ -130,11 +130,11 @@ namespace byteo {
             return ::SSL_write(ssl, buffer, size);
         }
 
-        inline int64_t write(descriptor desc, const std::vector<int8_t>& buffer) {
+        inline result<int64_t> write(descriptor desc, const std::vector<std::byte>& buffer) {
             return byteo::ssl::write(desc, buffer.data(), buffer.size());
         }
 
-        inline int64_t writestring(descriptor desc, const std::string& string) {
+        inline result<int64_t> writestring(descriptor desc, const std::string& string) {
             return byteo::ssl::write(desc, string.c_str(), string.size());
         }
 
