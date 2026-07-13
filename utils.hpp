@@ -180,7 +180,7 @@ namespace byteo {
         inline bool getblocking(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
-            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("setblocking(): socket closed");
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getblocking(): socket closed");
 
             byteo::utils::socket& sock = socket_table.at(desc.id);
 
