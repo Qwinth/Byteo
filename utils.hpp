@@ -89,14 +89,14 @@ namespace byteo {
         }
 
         template<>
-        inline void setsockopt<bool>(descriptor desc, int32_t level, int32_t optname, bool optval) {
+        inline void setsockopt<bool>(descriptor desc, int32_t level, int32_t optname, bool active) {
             std::unique_lock lock(socket_table_mutex);
 
             if (!descriptor_ok(desc)) throw std::runtime_error("setsockopt(): socket closed");
 
             byteo::utils::socket& sock = socket_table.at(desc.id);
 
-            int32_t int_optval = optval;
+            int32_t int_optval = active;
 
             if (::setsockopt(sock.fd, level, optname, reinterpret_cast<char*>(&int_optval), sizeof(int32_t)) == -1) throw std::runtime_error("setsockopt(): Unable to set socket option: " + std::string(strerror(errno)));
         }
