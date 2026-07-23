@@ -187,6 +187,16 @@ namespace byteo {
             return sock.blocking;
         }
 
+        inline bool getlistner(descriptor desc) {
+            std::unique_lock lock(socket_table_mutex);
+
+            if (!byteo::utils::descriptor_ok(desc)) throw std::runtime_error("getlistner(): socket closed");
+
+            byteo::utils::socket& sock = socket_table.at(desc.id);
+
+            return sock.listen;
+        }
+
         inline uint16_t refcount(descriptor desc) {
             std::unique_lock lock(socket_table_mutex);
 
