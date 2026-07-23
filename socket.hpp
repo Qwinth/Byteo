@@ -18,8 +18,9 @@ namespace byteo {
 
             std::atomic_bool working;
             std::atomic_bool blocking;
-            std::atomic_bool listen;
-            std::atomic_bool accepted;
+
+            bool listen;
+            bool accepted;
 
             int32_t family;
             int32_t type;
