@@ -32,7 +32,7 @@ namespace byteo {
             sock.fd = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
             sock.fingerprint = fingerprint;
 
-            sock.refcount = 1;
+            sock.refcount = 0;
 
             sock.working = false;
             sock.blocking = true;
@@ -67,7 +67,7 @@ namespace byteo {
             sock.fd = ::socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
             sock.fingerprint = fingerprint;
 
-            sock.refcount = 1;
+            sock.refcount = 0;
 
             sock.working = false;
             sock.blocking = true;

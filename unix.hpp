@@ -27,7 +27,7 @@ namespace byteo::unix {
             sock.fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
             sock.fingerprint = fingerprint;
 
-            sock.refcount = 1;
+            sock.refcount = 0;
 
             sock.working = false;
             sock.blocking = true;
@@ -57,7 +57,7 @@ namespace byteo::unix {
             sock.fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
             sock.fingerprint = fingerprint;
 
-            sock.refcount = 1;
+            sock.refcount = 0;
 
             sock.working = false;
             sock.blocking = true;
