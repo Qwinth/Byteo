@@ -89,7 +89,7 @@
  #include "unix.hpp"
  
  int main() {
-     byteo::descriptor sock = byteo::unix::socket();
+     byteo::descriptor sock = byteo::unix::stream::socket();
      byteo::unix::unlink("test.socket");
      byteo::bind(sock, {"test.socket"});
      byteo::listen(sock, 0);
